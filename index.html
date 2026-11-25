@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>የምስራቅ ጉራጌ ዞን - 3D የኢኖቬሽን ኤግዚቢሽን</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Noto Sans Ethiopic',sans-serif}
+body{overflow:hidden;background:#0f172a;color:#1e293b;user-select:none}
+#canvas-container{width:100vw;height:100vh;display:block;cursor:grab}
+#canvas-container:active{cursor:grabbing}
+.header-card{position:fixed;top:18px;left:18px;z-index:20;background:rgba(15,23,42,.93);color:white;padding:14px 18px;border-radius:14px;max-width:350px;border:1px solid #ffffff22;box-shadow:0 10px 25px #0004}
+.badge{background:#10b981;color:white;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:bold;display:inline-block;margin-bottom:6px}
+.header-card h1{font-size:15px;margin-bottom:4px;color:#f8fafc}.header-card p{font-size:12px;color:#cbd5e1;line-height:1.5}
+.top-actions{position:fixed;top:18px;right:18px;z-index:20;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn{padding:10px 14px;border:0;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px #0003}
+.btn-dark{background:#1e293b;color:white;border:1px solid #ffffff22}.btn-green{background:#10b981;color:white}.btn-amber{background:#f59e0b;color:white}.btn-red{background:#ef4444;color:white}
+.walk-hud{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(15,23,42,.94);color:white;padding:10px 18px;border-radius:22px;display:flex;align-items:center;gap:16px;box-shadow:0 12px 30px #0006;border:1px solid #ffffff22;max-width:96vw}
+.dpad{display:grid;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(2,32px);gap:4px;flex-shrink:0}
+.dpad-btn{background:#ffffff24;border:0;color:white;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;touch-action:none}.dpad-btn.active{background:#10b981}.dpad-spacer{visibility:hidden}
+.hud-info{min-width:230px;text-align:center}.hud-hint{font-size:10px;color:#94a3b8;margin-bottom:3px}.current-title{font-size:13px;font-weight:700;color:#34d399}.hud-sub{font-size:10px;color:#e2e8f0;margin-top:2px}
+.modal{display:none;position:fixed;inset:0;z-index:100;background:#0f172acc;backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:18px}.modal.active{display:flex}
+.modal-content{background:white;border-radius:16px;width:100%;max-width:500px;padding:22px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 40px #0005}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px}.close-btn{background:none;border:0;font-size:26px;cursor:pointer;color:#64748b}
+.form-group{margin-bottom:13px}.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#334155}.form-group input,.form-group textarea{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px}
+.preview-img{width:100%;height:180px;object-fit:contain;background:#f1f5f9;border-radius:8px;margin-top:8px;display:none;border:1px solid #e2e8f0}
+#view-2d{display:none;position:fixed;inset:0;z-index:50;background:#f8fafc;padding:100px 25px 25px;overflow-y:auto}#view-2d.active{display:block}
+.grid-2d{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;max-width:1200px;margin:auto}
+.card-2d{background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px #0001;border:1px solid #e2e8f0;display:flex;flex-direction:column}
+.card-2d img{width:100%;height:190px;object-fit:contain;background:#f1f5f9;cursor:pointer}.card-2d-body{padding:15px;flex:1}.card-2d-body h3{font-size:15px;margin-bottom:7px;color:#0f172a;cursor:pointer}.card-2d-body p{font-size:12px;color:#475569;line-height:1.6}.card-actions{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #f1f5f9}
+@media(max-width:650px){.header-card{top:8px;left:8px;max-width:220px;padding:9px 11px}.header-card h1{font-size:11px}.header-card p{font-size:9px}.top-actions{top:8px;right:8px;max-width:48%;gap:5px}.top-actions .btn{font-size:10px;padding:7px}.walk-hud{bottom:8px;gap:8px;padding:8px}.hud-info{min-width:130px}.hud-hint{font-size:8px}.current-title{font-size:10px}.hud-sub{font-size:8px}.dpad{grid-template-columns:repeat(3,29px);grid-template-rows:repeat(2,28px)}}
+</style>
+</head>
+<body>
+<div class="header-card"><span class="badge">3D Walk-Through Gallery</span><h1>ምስራቅ ጉራጌ ዞን ኢኖቬሽንና ቴክኖሎጂ መምሪያ</h1><p>በ3D አዳራሽ ውስጥ ይራመዱ። W/A/S/D ወይም ቀስቶችን ይጠቀሙ፤ ለመመልከት ማውሱን ይጎትቱ።</p></div>
+<div class="top-actions">
+<button class="btn btn-dark" onclick="resetWalkPosition()">🚶 ወደ መግቢያ ተመለስ</button>
+<button class="btn btn-dark" id="toggle-view-btn" onclick="toggle2DView()">⊞ ወደ 2D ዝርዝር</button>
+<button class="btn btn-green" onclick="openAddModal()">+ አዲስ ፈጠራ መዝግብ</button>
+</div>
+<div id="canvas-container"></div>
+<div class="walk-hud">
+<div class="dpad">
+<div class="dpad-spacer"></div><button class="dpad-btn" id="btn-fwd">▲</button><div class="dpad-spacer"></div>
+<button class="dpad-btn" id="btn-left">◀</button><button class="dpad-btn" id="btn-back">▼</button><button class="dpad-btn" id="btn-right">▶</button>
+</div>
+<div class="hud-info"><div class="hud-hint">በአቅራቢያ ያለ ፈጠራ • ፎቶውን ጠቅ በማድረግ ዝርዝር ይመልከቱ</div><div class="current-title" id="nav-title">የኤግዚቢሽን አዳራሽ</div><div class="hud-sub" id="walk-status">በ3D አዳራሽ እየተራመዱ ነው</div></div>
+</div>
+<div id="view-2d"><div class="grid-2d" id="grid-2d-container"></div></div>
+
+<div class="modal" id="add-modal"><div class="modal-content">
+<div class="modal-header"><h3>አዲስ የፈጠራ ስራ መዝግብ</h3><button class="close-btn" onclick="closeAddModal()">&times;</button></div>
+<form id="innovation-form">
+<div class="form-group"><label>የፈጠራ ስራው ስም *</label><input id="inv-title" required placeholder="የፈጠራ ስራውን ስም ያስገቡ"></div>
+<div class="form-group"><label>የፈጠራ ባለቤት ስም እና አድራሻ *</label><input id="inv-author" required placeholder="ስም እና አድራሻ"></div>
+<div class="form-group"><label>የፈጠራ ስራው ፎቶ *</label><input type="file" id="inv-image" accept="image/*" required onchange="previewFile()"><img id="img-preview" class="preview-img" alt="ቅድመ እይታ"></div>
+<div class="form-group"><label>አጭር መግለጫ</label><textarea id="inv-desc" rows="3"></textarea></div>
+<button type="submit" class="btn btn-green" style="width:100%;justify-content:center">ወደ 3D አዳራሹ አስገባ</button>
+</form></div></div>
+
+<div class="modal" id="edit-modal"><div class="modal-content">
+<div class="modal-header"><h3>የፈጠራ ስራ አርም እና አዘምን</h3><button class="close-btn" onclick="closeEditModal()">&times;</button></div>
+<form id="edit-innovation-form"><input type="hidden" id="edit-index">
+<div class="form-group"><label>የፈጠራ ስራው ስም *</label><input id="edit-title" required></div>
+<div class="form-group"><label>የፈጠራ ባለቤት ስም እና አድራሻ *</label><input id="edit-author" required></div>
+<div class="form-group"><label>ፎቶ መቀየር ከፈለጉ ይምረጡ</label><input type="file" id="edit-image" accept="image/*" onchange="previewEditFile()"><img id="edit-img-preview" class="preview-img" style="display:block" alt="የአሁኑ ፎቶ"></div>
+<div class="form-group"><label>መግለጫ</label><textarea id="edit-desc" rows="3"></textarea></div>
+<button type="submit" class="btn btn-amber" style="width:100%;justify-content:center">ለውጦችን አዘምን</button>
+</form></div></div>
+
+<div class="modal" id="detail-modal"><div class="modal-content">
+<div class="modal-header"><h3 id="detail-title"></h3><button class="close-btn" onclick="closeDetailModal()">&times;</button></div>
+<img id="detail-img" style="width:100%;max-height:260px;object-fit:contain;background:#f1f5f9;border-radius:10px;margin-bottom:12px" alt="የፈጠራ ምስል">
+<p id="detail-author" style="font-size:13px;color:#059669;font-weight:bold;margin-bottom:8px"></p><p id="detail-desc" style="font-size:14px;color:#334155;line-height:1.6;margin-bottom:16px"></p>
+<div style="display:flex;gap:10px;border-top:1px solid #e2e8f0;padding-top:14px"><button class="btn btn-amber" id="detail-edit-btn" style="flex:1;justify-content:center">✏️ አርም</button><button class="btn btn-red" id="detail-delete-btn">🗑️ ሰርዝ</button></div>
+</div></div>
+
+<script>
+function makePlaceholder(title,subtitle){
+ const c=document.createElement('canvas');c.width=900;c.height=600;const x=c.getContext('2d');
+ x.fillStyle='#102033';x.fillRect(0,0,900,600);x.strokeStyle='#10b981';x.lineWidth=12;x.strokeRect(25,25,850,550);
+ x.textAlign='center';x.fillStyle='#34d399';x.font='bold 34px sans-serif';x.fillText('ምስራቅ ጉራጌ ዞን ኢኖቬሽን',450,160);
+ x.fillStyle='white';x.font='bold 32px sans-serif';x.fillText(String(title).slice(0,38),450,300);
+ x.fillStyle='#cbd5e1';x.font='24px sans-serif';x.fillText(subtitle,450,370);return c.toDataURL('image/png');
+}
+const defaults=[
+{title:'1. ወቃር የማይፈልግ በሲንግልፌዝ የሚሰራ ወፍጮ',author:'የሀገር ውስጥ የፈጠራ ባለሙያ - ቡታጅራ',desc:'በመደበኛ ባለ አንድ ፌዝ (Single-phase 220V) የኤሌክትሪክ ኃይል የሚሰራ ዘመናዊ ወፍጮ።',image:'images/mill.jpg'},
+{title:'2. በሶላር የሚሰራ አውቶማቲክ የእጅ መታጠቢያ',author:'የሀገር ውስጥ የፈጠራ ባለሙያ - ምስራቅ ጉራጌ ዞን',desc:'ያለ ንክኪ በሴንሰር የሚሰራ እና ኃይሉን ከፀሐይ ብርሃን የሚያገኝ መሳሪያ።',image:makePlaceholder('በሶላር የሚሰራ የእጅ መታጠቢያ','ያለ ንክኪ በሴንሰር')},
+{title:'3. ሰብልን ከአእዋፋትና እንስሳት የሚጠብቅ አውቶማቲክ መሳሪያ',author:'የሀገር ውስጥ የፈጠራ ባለሙያ - ኬላ',desc:'ሰብልን ከወፎችና ከዱር እንስሳት ለመከላከል በእንቅስቃሴ ሴንሰር የሚሰራ መሳሪያ።',image:makePlaceholder('ሰብል ጠባቂ መሳሪያ','ለአርሶ አደሮች') }
+];
+const STORAGE_KEY='gurage_innovations_walk_v1';
+let innovations;
+try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));innovations=Array.isArray(saved)?saved:defaults}catch(e){innovations=defaults}
+function saveStorage(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(innovations))}catch(e){alert('የማስቀመጫ ቦታ ተሞልቷል። ትልቅ ፎቶ ይቀንሱ ወይም ጥቂት ፎቶዎችን ይጠቀሙ።')}}
+function readImage(file,cb){if(!file)return;const reader=new FileReader();reader.onload=e=>{const im=new Image();im.onload=()=>{const max=1200,scale=Math.min(1,max/im.width);const c=document.createElement('canvas');c.width=Math.round(im.width*scale);c.height=Math.round(im.height*scale);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.9))};im.onerror=()=>alert('ፎቶውን መክፈት አልተቻለም።');im.src=e.target.result};reader.readAsDataURL(file)}
+
+const container=document.getElementById('canvas-container');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe2e8f0);scene.fog=new THREE.Fog(0xe2e8f0,18,75);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,180);camera.rotation.order='YXZ';
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputEncoding=THREE.sRGBEncoding;container.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x64748b,1.35));const light=new THREE.DirectionalLight(0xffffff,.65);light.position.set(4,12,8);scene.add(light);
+const hallWidth=10,hallLength=160,spacing=10.5,eyeHeight=1.7;
+let playerX=0,playerZ=4,yaw=0,pitch=0;
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(hallWidth,hallLength),new THREE.MeshStandardMaterial({color:0xf8fafc,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.set(0,-.02,-hallLength/2+8);scene.add(floor);
+const carpet=new THREE.Mesh(new THREE.PlaneGeometry(2.2,hallLength),new THREE.MeshBasicMaterial({color:0xe2e8f0}));carpet.rotation.x=-Math.PI/2;carpet.position.set(0,.005,-hallLength/2+8);scene.add(carpet);
+const wallMat=new THREE.MeshStandardMaterial({color:0xcbd5e1,roughness:.85});
+for(const side of [-1,1]){const wall=new THREE.Mesh(new THREE.BoxGeometry(.3,4.8,hallLength),wallMat);wall.position.set(side*5,2.4,-hallLength/2+8);scene.add(wall);
+ const trim=new THREE.Mesh(new THREE.BoxGeometry(.34,.22,hallLength),new THREE.MeshStandardMaterial({color:0x334155}));trim.position.set(side*5,.11,-hallLength/2+8);scene.add(trim)}
+let exhibits=[];
+const loader=new THREE.TextureLoader();
+function setPhotoTexture(mesh,url,item){
+ const fallback=()=>{const tex=new THREE.CanvasTexture((()=>{const c=document.createElement('canvas');c.width=900;c.height=600;const x=c.getContext('2d');x.fillStyle='#102033';x.fillRect(0,0,900,600);x.fillStyle='#34d399';x.textAlign='center';x.font='bold 32px sans-serif';x.fillText('ምስራቅ ጉራጌ ዞን',450,210);x.fillStyle='white';x.font='bold 28px sans-serif';x.fillText(String(item.title).slice(0,40),450,310);x.fillStyle='#cbd5e1';x.font='22px sans-serif';x.fillText('ፎቶ ለመጨመር Edit ይጫኑ',450,390);return c})());tex.encoding=THREE.sRGBEncoding;mesh.material.map=tex;mesh.material.color.set(0xffffff);mesh.material.needsUpdate=true};
+ loader.load(url,tex=>{tex.encoding=THREE.sRGBEncoding;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();mesh.material.map=tex;mesh.material.color.set(0xffffff);mesh.material.needsUpdate=true},undefined,fallback);
+}
+function buildExhibits(){
+ exhibits.forEach(o=>scene.remove(o.group));exhibits=[];
+ innovations.forEach((item,index)=>{
+  const left=index%2===0;
+  const group=new THREE.Group();
+  // ፍሬሙ ከግድግዳው ውስጠኛ ገጽ በግልጽ ርቀት ወደ አዳራሹ ተንቀሳቅሷል።
+  // የፎቶው ፊት ወደ መካከለኛው መንገድ ይመለከታል።
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(3.4,2.35,.16),new THREE.MeshStandardMaterial({color:0x0f172a,roughness:.55}));
+  group.add(frame);
+  const photo=new THREE.Mesh(new THREE.PlaneGeometry(3.12,2.07),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide}));
+  photo.position.z=.086;group.add(photo);
+  // የግራው ፎቶ +X፣ የቀኙ -X አቅጣጫ ይመለከታል።
+  group.rotation.y=left?Math.PI/2:-Math.PI/2;
+  group.position.set(left?-4.35:4.35,2.0,-index*spacing-2);
+  photo.userData.index=index;setPhotoTexture(photo,item.image,item);
+  scene.add(group);exhibits.push({group,photo,z:-index*spacing-2});
+ });
+ updateHud();update2D();
+}
+function updateHud(){const el=document.getElementById('nav-title');if(!innovations.length){el.textContent='ምንም የተመዘገበ ፈጠራ የለም';return}let best=0,dist=Infinity;exhibits.forEach((e,i)=>{const d=Math.abs(e.z-playerZ);if(d<dist){dist=d;best=i}});el.textContent=innovations[best]?.title||'የኤግዚቢሽን አዳራሽ'}
+function clamp(){playerZ=Math.max(-(Math.max(1,innovations.length)*spacing+7),Math.min(6,playerZ));playerX=Math.max(-3.5,Math.min(3.5,playerX))}
+function resetWalkPosition(){playerX=0;playerZ=4;yaw=0;pitch=0;updateHud()}
+const keys={},held={fwd:false,back:false,left:false,right:false};
+addEventListener('keydown',e=>{if(document.querySelector('.modal.active'))return;keys[e.code]=true});addEventListener('keyup',e=>keys[e.code]=false);
+function bindHold(id,key){const b=document.getElementById(id);const down=e=>{e.preventDefault();held[key]=true;b.classList.add('active')};const up=()=>{held[key]=false;b.classList.remove('active')};b.addEventListener('pointerdown',down);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
+bindHold('btn-fwd','fwd');bindHold('btn-back','back');bindHold('btn-left','left');bindHold('btn-right','right');
+let dragging=false,px=0,py=0,dragDistance=0;
+container.addEventListener('pointerdown',e=>{dragging=true;dragDistance=0;px=e.clientX;py=e.clientY});
+addEventListener('pointerup',()=>dragging=false);
+addEventListener('pointermove',e=>{if(!dragging||document.querySelector('.modal.active'))return;const dx=e.clientX-px,dy=e.clientY-py;dragDistance+=Math.abs(dx)+Math.abs(dy);yaw-=dx*.0045;pitch=Math.max(-.55,Math.min(.55,pitch-dy*.0035));px=e.clientX;py=e.clientY});
+addEventListener('wheel',e=>{if(document.querySelector('.modal.active')||document.getElementById('view-2d').classList.contains('active'))return;playerZ+=e.deltaY*.008;clamp();updateHud()},{passive:true});
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+container.addEventListener('click',e=>{if(dragDistance>6)return;mouse.x=e.clientX/innerWidth*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObjects(exhibits.map(e=>e.photo));if(hit.length)showDetail(hit[0].object.userData.index)});
+
+let newImage='';
+function previewFile(){readImage(document.getElementById('inv-image').files[0],data=>{newImage=data;const p=document.getElementById('img-preview');p.src=data;p.style.display='block'})}
+document.getElementById('innovation-form').addEventListener('submit',e=>{e.preventDefault();if(!newImage){alert('እባክዎ ፎቶ ይምረጡ');return}innovations.push({title:(innovations.length+1)+'. '+document.getElementById('inv-title').value,author:document.getElementById('inv-author').value,desc:document.getElementById('inv-desc').value||'ተጨማሪ መግለጫ አልተሰጠም።',image:newImage});saveStorage();buildExhibits();closeAddModal();e.target.reset();newImage='';document.getElementById('img-preview').style.display='none'});
+let editImage='';
+function openEdit(idx){closeDetailModal();const item=innovations[idx];if(!item)return;document.getElementById('edit-index').value=idx;document.getElementById('edit-title').value=item.title;document.getElementById('edit-author').value=item.author;document.getElementById('edit-desc').value=item.desc;document.getElementById('edit-image').value='';const p=document.getElementById('edit-img-preview');p.src=item.image;p.style.display='block';editImage='';document.getElementById('edit-modal').classList.add('active')}
+function previewEditFile(){readImage(document.getElementById('edit-image').files[0],data=>{editImage=data;document.getElementById('edit-img-preview').src=data})}
+document.getElementById('edit-innovation-form').addEventListener('submit',e=>{e.preventDefault();const i=Number(document.getElementById('edit-index').value);if(!innovations[i])return;innovations[i].title=document.getElementById('edit-title').value;innovations[i].author=document.getElementById('edit-author').value;innovations[i].desc=document.getElementById('edit-desc').value||'ተጨማሪ መግለጫ አልተሰጠም።';if(editImage)innovations[i].image=editImage;saveStorage();buildExhibits();closeEditModal()});
+function deleteInnovation(i){if(!innovations[i]||!confirm('ይህን የፈጠራ መረጃ መሰረዝ ይፈልጋሉ?'))return;closeDetailModal();innovations.splice(i,1);saveStorage();buildExhibits()}
+function showDetail(i){const item=innovations[i];if(!item)return;document.getElementById('detail-title').textContent=item.title;document.getElementById('detail-img').src=item.image;document.getElementById('detail-author').textContent='ፈጣሪ፦ '+item.author;document.getElementById('detail-desc').textContent=item.desc;document.getElementById('detail-edit-btn').onclick=()=>openEdit(i);document.getElementById('detail-delete-btn').onclick=()=>deleteInnovation(i);document.getElementById('detail-modal').classList.add('active')}
+function openAddModal(){document.getElementById('add-modal').classList.add('active')}function closeAddModal(){document.getElementById('add-modal').classList.remove('active')}function closeEditModal(){document.getElementById('edit-modal').classList.remove('active')}function closeDetailModal(){document.getElementById('detail-modal').classList.remove('active')}
+function toggle2DView(){const v=document.getElementById('view-2d');v.classList.toggle('active');document.getElementById('toggle-view-btn').textContent=v.classList.contains('active')?'🏛️ ወደ 3D አዳራሽ ተመለስ':'⊞ ወደ 2D ዝርዝር'}
+function update2D(){document.getElementById('grid-2d-container').innerHTML=innovations.map((it,i)=>`<div class="card-2d"><img src="${it.image}" alt="innovation" onclick="showDetail(${i})"><div class="card-2d-body"><h3 onclick="showDetail(${i})">${escapeHtml(it.title)}</h3><p style="color:#059669;font-weight:600;margin-bottom:5px">${escapeHtml(it.author)}</p><p>${escapeHtml(it.desc)}</p><div class="card-actions"><button class="btn btn-amber" style="flex:1;justify-content:center" onclick="openEdit(${i})">✏️ አርም</button><button class="btn btn-red" onclick="deleteInnovation(${i})">🗑️</button></div></div></div>`).join('')}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function animate(){requestAnimationFrame(animate);if(!document.querySelector('.modal.active')&&!document.getElementById('view-2d').classList.contains('active')){const f=(keys.KeyW||keys.ArrowUp||held.fwd)?1:0,b=(keys.KeyS||keys.ArrowDown||held.back)?1:0,z=b-f;let x=0;if(keys.KeyA||held.left)x-=1;if(keys.KeyD||held.right)x+=1;if(keys.ArrowLeft)yaw+=.025;if(keys.ArrowRight)yaw-=.025;if(z||x){const s=Math.sin(yaw),c=Math.cos(yaw);playerX+=(s*z+c*x)*.11;playerZ+=(c*z-s*x)*.11;clamp();updateHud()}}camera.position.set(playerX,eyeHeight,playerZ);camera.rotation.y=yaw;camera.rotation.x=pitch;renderer.render(scene,camera)}
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+buildExhibits();animate();
+</script>
+</body>
+</html>
